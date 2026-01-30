@@ -16,4 +16,13 @@ public class User {
     public String getPseudo() {return pseudo; }
     public String getRole() {return role; }
     public String getPassword() { return password; }
+
+    public void setPseudo(String pseudo) { this.pseudo = pseudo;}
+    public void setPassword(String password) { this.password = password;}
+    public void setRole(String role) { this.role = role;}
+
+    @Override
+    public String toString() {
+        return "ID: " + id + " | " + pseudo + " (" + role + ")";
+    }
 }
