@@ -1,6 +1,7 @@
 package dao;
 
 import database.DatabaseConnection;
+import models.User;
 import utils.SecurityUtils;
 
 import java.sql.Connection;
@@ -40,5 +41,20 @@ public class UserDAO {
         } catch (SQLException e) {
             throw new Exception("Erreur lors de la creation de l'utilisateur : " + e.getMessage());
         }
+    }
+    public User login(String email, String password) throws Exception {
+        String sql = "SELECT * FROM users WHERE email = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                String hashed = SecurityUtils.hashPassword(password);
+                if (rs.getString("password").equals(hashed)) {
+                    return new User(rs.getInt("id"), rs.getString("email"), rs.getString("pseudo"),"", rs.getString("role"));
+                }
+            }
+        }
+        throw  new Exception("Email ou mot de passe incorrect.");
     }
 }
