@@ -1,88 +1,84 @@
 package main;
-import dao.*;
-import models.*;
+
+import dao.UserDAO;
+import dao.StoreDAO;
+import dao.InventoryDAO;
+import models.User;
+import models.Store;
+import models.Item;
 import java.util.Scanner;
 import java.util.List;
 
 public class Main {
-    public static void main(String[] args){
+    public static void main(String[] args) {
+        // 1. Initialisation des objets de base
         UserDAO userDAO = new UserDAO();
         StoreDAO storeDAO = new StoreDAO();
-        InventoryDAO invetoryDAO = new InventoryDAO();
+        InventoryDAO inventoryDAO = new InventoryDAO();
         Scanner sc = new Scanner(System.in);
         User currentUser = null;
 
+        // 2. Boucle principale
         while (true) {
-            if (currentUser == null){
-                System.out.println("\n--- BIENVENUE ---");
-                System.out.println("1. Se connecter\n2. Créer un compte\n0. Quitter");
-                int choice = sc.nextInt(); sc.nextLine();
+            if (currentUser == null) {
+                // MENU CONNEXION
+                System.out.println("\n--- ACCUEIL ---");
+                System.out.println("1. Se connecter\n0. Quitter");
+                System.out.print("Choix : ");
+                int choice = sc.nextInt();
+                sc.nextLine();
 
                 if (choice == 1) {
-                    System.out.print("Email: ");
-                    String em = sc.nextLine();
-                    System.out.print("Password: ");
-                    String pw = sc.nextLine();
-
+                    System.out.print("Email : "); String em = sc.nextLine();
+                    System.out.print("Pass : "); String pw = sc.nextLine();
                     try {
                         currentUser = userDAO.login(em, pw);
-                        System.out.println("Connecté !");
+                        if (currentUser != null) System.out.println("Bienvenue " + currentUser.getPseudo());
                     } catch (Exception e) {
                         System.out.println("Erreur : " + e.getMessage());
                     }
-
-                } else if (choice == 2) {
-                    System.out.print("Email: ");
-                    String em = sc.nextLine();
-                    System.out.print("Pseudo: ");
-                    String ps = sc.nextLine();
-                    System.out.print("Password: ");
-                    String pw = sc.nextLine();
-
-                    try {
-                        userDAO.creatUser(em, ps, pw, "USER");
-                        System.out.println("Compte créé !");
-                    } catch (Exception e) {
-                        System.out.println("Erreur : " + e.getMessage());
-                    }
-                } else if (choice == 0 ) {
-                    System.out.println("Au revoir !");
-                    System.exit(0);
+                } else if (choice == 0) {
+                    break;
                 }
+            } else {
+                // MENU ACTIONS (Une fois connecté)
+                System.out.println("\n--- MENU ---");
+                System.out.println("1. Voir les magasins\n2. Voir les stocks\n0. Déconnexion");
+                System.out.print("Choix : ");
+                int action = sc.nextInt();
+                sc.nextLine();
 
-                while (currentUser != null) {
-                    System.out.println("\n=== MENU PRINCIPAL (" + currentUser.getRole() + ") ===");
-                    System.out.println("1.Voir les magasins");
-                    System.out.println("2. Voir les stocks d'un magasin");
-
-                    if (currentUser.getRole().equals("ADMIN")){
-                        System.out.println("3. [ADMIN] créer un magasin");
-                        System.out.println("4. [ADMIN] Whitelister un utilisateur");
-                    }
-
-                    System.out.println("0.Se déconnecter");
-                    System.out.print("Choix :");
-                    int action = sc.nextInt(); sc.nextLine();
-
-                    try {
-                        if (action == 1) {
-                            List<Store> stores = storeDAO.getAllStores();
-                            System.out.println("\n--- Liste des Magasins ---");
-                            for (Store s : stores) {
-                                System.out.println("- ID: " + s.getId() + "| Nom: " + s.getName())
-                            }
-                        }
-                        else if (action == 2) {
-                            System.out.print("Entrez l'ID du magasin :");
-                            int storeId = sc.nextInt(); sc.nextLine();
-                            List<Item> items = invetoryDAO.getItems(storeId);
-                            System.out.println("\n--- Inventaire ---");
-                            for (Item i : items) System.out.println(i);
+                try {
+                    if (action == 1) {
+                        // Utilisation du nom complet pour éviter les erreurs de List
+                        java.util.List<models.Store> stores = storeDAO.getAllStores();
+                        System.out.println("\n--- MAGASINS ---");
+                        for (models.Store s : stores) {
+                            System.out.println("ID: " + s.getId() + " | Nom: " + s.getName());
                         }
                     }
+                    else if (action == 2) {
+                        System.out.print("ID du magasin : ");
+                        int storeId = sc.nextInt();
+                        sc.nextLine();
+
+                        // Récupération de l'inventaire
+                        java.util.List<models.Item> items = inventoryDAO.getItems(storeId);
+                        System.out.println("\n--- STOCKS ---");
+                        for (models.Item i : items) {
+                            // On affiche l'objet 'i' directement, ce qui appellera ton toString()
+                            System.out.println(i);
+                        }
+                    }
+                    else if (action == 0) {
+                        currentUser = null;
+                        System.out.println("👋 Déconnecté.");
+                    }
+                } catch (Exception e) {
+                    System.out.println(" Erreur SQL : " + e.getMessage());
                 }
             }
         }
+        sc.close();
     }
-
 }
