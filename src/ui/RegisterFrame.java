@@ -32,7 +32,7 @@ public class RegisterFrame extends JFrame {
         setResizable(false);
 
         /*
-         * Couleur de fond sombre pour un rendu professionnel
+         * Couleur de fond sombre pour un meilleur rendu
          * et cohérent avec la fenêtre de connexion.
          */
         getContentPane().setBackground(new Color(44, 62, 80));
@@ -46,7 +46,7 @@ public class RegisterFrame extends JFrame {
         gbc.insets = new Insets(12, 12, 12, 12);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // ===== Titre =====
+        //  Titre
         JLabel lblTitle = new JLabel("Créer un compte iStore", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Arial", Font.BOLD, 22));
         lblTitle.setForeground(Color.WHITE);
@@ -57,27 +57,27 @@ public class RegisterFrame extends JFrame {
         add(lblTitle, gbc);
         gbc.gridwidth = 1;
 
-        // ===== Email =====
+        // Email
         addLabel("Email :", gbc, 1, 0);
         txtEmail = new JTextField(20);
         addField(txtEmail, gbc, 1, 1);
 
-        // ===== Pseudo =====
+        //  Pseudo
         addLabel("Pseudo :", gbc, 2, 0);
         txtPseudo = new JTextField(20);
         addField(txtPseudo, gbc, 2, 1);
 
-        // ===== Mot de passe =====
+        //  Mot de passe
         addLabel("Mot de passe :", gbc, 3, 0);
         txtPassword = new JPasswordField(20);
         addField(txtPassword, gbc, 3, 1);
 
-        // ===== Confirmation =====
+        //  Confirmation
         addLabel("Confirmer mot de passe :", gbc, 4, 0);
         txtConfirmPassword = new JPasswordField(20);
         addField(txtConfirmPassword, gbc, 4, 1);
 
-        // ===== Boutons =====
+        //  Boutons
         JButton btnRegister = new JButton("Créer le compte");
         JButton btnCancel = new JButton("Annuler");
 
@@ -123,7 +123,7 @@ public class RegisterFrame extends JFrame {
             /*
              * Appel direct au DAO.
              * Le mot de passe est hashé côté DAO,
-             * ce qui respecte les consignes de sécurité.
+             * le but est de respecter les consignes de sécurité.
              */
             userDAO.creatUser(email, pseudo, password, "EMPLOYEE");
 
@@ -141,7 +141,7 @@ public class RegisterFrame extends JFrame {
         }
     }
 
-    // ===== Méthodes utilitaires =====
+    // Méthodes utilitaires
 
     private void addLabel(String text, GridBagConstraints gbc, int y, int x) {
         JLabel label = new JLabel(text);
