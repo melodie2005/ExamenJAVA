@@ -72,7 +72,7 @@ public class Main {
                     }
                     else if (action == 0) {
                         currentUser = null;
-                        System.out.println("👋 Déconnecté.");
+                        System.out.println(" Déconnecté.");
                     }
                 } catch (Exception e) {
                     System.out.println(" Erreur SQL : " + e.getMessage());
