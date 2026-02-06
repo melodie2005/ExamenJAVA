@@ -22,7 +22,7 @@ public class UserDAO {
     }
 
     public void creatUser(String email, String pseudo, String password, String role) throws Exception {
-        if (!isWhitelisted(email)) throw new Exception("Email non whiitelisté !");
+        if (!isWhitelisted(email)) throw new Exception("Email non whitelisté !");
 
         String sql = "INSERT INTO users (email, pseudo, password, role) VALUES (?, ?, ?,?)";
 
@@ -51,10 +51,11 @@ public class UserDAO {
             if (rs.next()) {
                 String hashed = SecurityUtils.hashPassword(password);
                 if (rs.getString("password").equals(hashed)) {
-                    return new User(rs.getInt("id"), rs.getString("email"), rs.getString("pseudo"),"", rs.getString("role"));
+                    return new User(rs.getInt("id"), rs.getString("email"), rs.getString("pseudo"), "", rs.getString("role"));
                 }
             }
         }
-        throw  new Exception("Email ou mot de passe incorrect.");
+        throw new Exception("Email ou mot de passe incorrect.");
+      }
     }
-}
+
