@@ -14,6 +14,7 @@ public class StoreDAO {
             stmt.executeUpdate();
         }
     }
+
     public List<Store> getAllStores() throws SQLException {
         List<Store> list = new ArrayList();
         String sql = "SELECT * FROM stores";
@@ -24,6 +25,4 @@ public class StoreDAO {
         }
         return list;
     }
-
-
 }

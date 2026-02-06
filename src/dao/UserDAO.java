@@ -22,7 +22,7 @@ public class UserDAO {
     }
 
     public void creatUser(String email, String pseudo, String password, String role) throws Exception {
-        if (!isWhitelisted(email)) throw new Exception("Email non whiitelisté !");
+        if (!isWhitelisted(email)) throw new Exception("Email non whitelisté !");
 
         String sql = "INSERT INTO users (email, pseudo, password, role) VALUES (?, ?, ?,?)";
 
