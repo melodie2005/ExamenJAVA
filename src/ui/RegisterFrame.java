@@ -115,7 +115,7 @@ public class RegisterFrame extends JFrame {
                 return;
             }
 
-            if (!userDAO.isWhitelisted(email)) {
+            if (userDAO.isWhitelisted(email)) {
                 showError("Cet email n'est pas autorisé à créer un compte.");
                 return;
             }
