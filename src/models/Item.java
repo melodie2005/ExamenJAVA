@@ -1,6 +1,7 @@
 package models;
 
 public class Item {
+
     private int id, quantity;
     private String name;
     private double price;
@@ -11,8 +12,27 @@ public class Item {
         this.price = price;
         this.quantity = quantity;
     }
+
+    // ===== Getters ajoutés par Ruth =====
+
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
     @Override
     public String toString() {
-        return id + " | " + name + "| Prix: " + price + "€ | Stock: " + quantity;
+        return id + " | " + name + " | Prix: " + price + "€ | Stock: " + quantity;
     }
 }

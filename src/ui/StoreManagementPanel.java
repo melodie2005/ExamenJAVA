@@ -1,159 +1,183 @@
 package ui;
 
+import dao.StoreDAO;
+import models.Store;
+import models.User;
+
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.util.List;
 
-/**
- * Panneau de gestion des magasins (Stores).
- *
- * Ce panneau est accessible UNIQUEMENT par un administrateur.
- * Il permet :
- *  - d'afficher la liste des magasins existants
- *  - de créer un nouveau magasin
- *  - de supprimer un magasin
- */
-public class StoreManagementPanel extends JPanel {
+public class StoreManagementPanel extends JFrame {
 
-    // Modèle de données pour la liste des magasins
-    private DefaultListModel<String> storeListModel;
+    private JTable storeTable;
+    private DefaultTableModel tableModel;
+    private User connectedUser;
 
-    // Liste graphique des magasins
-    private JList<String> storeList;
+    private StoreDAO storeDAO = new StoreDAO();
 
-    public StoreManagementPanel() {
+    public StoreManagementPanel(User user) {
 
-        /*
-         * BorderLayout est utilisé pour structurer le panneau :
-         * - NORTH : titre
-         * - CENTER : liste des magasins
-         * - SOUTH : boutons d'action
-         */
+        this.connectedUser = user;
+
+        setTitle("iStore - Gestion des Magasins");
+        setSize(900, 550);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
 
-
-        // Titre
-
-        JLabel lblTitle = new JLabel("Gestion des magasins", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
+        // ===== Titre =====
+        JLabel lblTitle = new JLabel("Gestion des Magasins", SwingConstants.CENTER);
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 22));
         lblTitle.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-
         add(lblTitle, BorderLayout.NORTH);
 
+        // ===== Tableau =====
+        tableModel = new DefaultTableModel(
+                new Object[]{"ID", "Nom du magasin", "Nombre d'employés"},
+                0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
-        // Centre : liste des magasins
-
-
-        /*
-         * DefaultListModel est utilisé car il permet
-         * d'ajouter et supprimer dynamiquement des éléments,
-         * ce qui correspond bien à une liste de magasins.
-         */
-        storeListModel = new DefaultListModel<>();
-
-        /*
-         * JList affiche les magasins.
-         * Pour le moment, on utilise des données fictives,
-         * qui seront remplacées plus tard par les données DAO.
-         */
-        storeList = new JList<>(storeListModel);
-        storeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        // Données d'exemple (pour démonstration UI)
-        storeListModel.addElement("Store Paris");
-        storeListModel.addElement("Store Lyon");
-        storeListModel.addElement("Store Marseille");
-
-        JScrollPane scrollPane = new JScrollPane(storeList);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 40, 10, 40));
-
+        storeTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(storeTable);
         add(scrollPane, BorderLayout.CENTER);
 
+        // Chargement réel depuis la base
+        loadStoresFromDatabase();
 
-        // Bas : boutons d'action
+        // ===== Boutons =====
+        JPanel bottomPanel = new JPanel(new FlowLayout());
 
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        JButton btnAdd = new JButton("Ajouter Magasin");
+        JButton btnEmployees = new JButton("Voir Employés");
+        JButton btnDelete = new JButton("Supprimer");
 
-        JButton btnAddStore = new JButton("Créer un magasin");
-        JButton btnDeleteStore = new JButton("Supprimer le magasin");
+        if (connectedUser.getRole().equalsIgnoreCase("ADMIN")) {
+            bottomPanel.add(btnAdd);
+            bottomPanel.add(btnEmployees);
+            bottomPanel.add(btnDelete);
+        } else {
+            bottomPanel.add(btnEmployees);
+        }
 
-        actionPanel.add(btnAddStore);
-        actionPanel.add(btnDeleteStore);
+        add(bottomPanel, BorderLayout.SOUTH);
 
-        add(actionPanel, BorderLayout.SOUTH);
+        // ===== Actions =====
+        btnAdd.addActionListener(e -> addStore());
+        btnDelete.addActionListener(e -> deleteStore());
+        btnEmployees.addActionListener(e -> showEmployees());
 
-
-        // Actions des boutons
-
-
-        /*
-         * Bouton de création d'un magasin.
-         * Une boîte de dialogue est utilisée pour saisir le nom,
-         */
-        btnAddStore.addActionListener(e -> addStore());
-
-        /*
-         * Bouton de suppression d'un magasin sélectionné.
-         * Une confirmation est demandée avant suppression,
-         */
-        btnDeleteStore.addActionListener(e -> deleteStore());
+        setVisible(true);
     }
 
-    /**
-     * Ajout d'un magasin.
-     *
-     * Cette méthode gère uniquement l'interface.
-     */
+    // ===============================
+    // Chargement depuis la base
+    // ===============================
+    private void loadStoresFromDatabase() {
+
+        try {
+            tableModel.setRowCount(0);
+
+            List<Store> stores = storeDAO.getAllStores();
+
+            for (Store store : stores) {
+                tableModel.addRow(new Object[]{
+                        store.getId(),
+                        store.getName(),
+                        0   // Pour l'instant on laisse 0 employés
+                });
+            }
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Erreur chargement magasins : " + e.getMessage());
+        }
+    }
+
     private void addStore() {
-        String storeName = JOptionPane.showInputDialog(
-                this,
-                "Nom du nouveau magasin :",
-                "Créer un magasin",
-                JOptionPane.PLAIN_MESSAGE
-        );
 
-        if (storeName == null || storeName.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Le nom du magasin ne peut pas être vide.",
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE
-            );
+        if (!connectedUser.getRole().equalsIgnoreCase("ADMIN")) {
+            JOptionPane.showMessageDialog(this,
+                    "Seul un administrateur peut créer un magasin.");
             return;
         }
 
-        // Ajout dans la liste
-        storeListModel.addElement(storeName.trim());
+        String name = JOptionPane.showInputDialog(this,
+                "Nom du nouveau magasin :");
+
+        if (name == null || name.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Nom invalide.");
+            return;
+        }
+
+        try {
+            storeDAO.createStore(name.trim());
+            loadStoresFromDatabase();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Erreur création magasin : " + e.getMessage());
+        }
     }
 
-    /**
-     * Suppression d'un magasin sélectionné.
-     *
-     * L'utilisateur doit sélectionner un magasin dans la liste.
-     */
     private void deleteStore() {
-        int selectedIndex = storeList.getSelectedIndex();
 
-        if (selectedIndex == -1) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Veuillez sélectionner un magasin à supprimer.",
-                    "Aucune sélection",
-                    JOptionPane.WARNING_MESSAGE
-            );
+        if (!connectedUser.getRole().equalsIgnoreCase("ADMIN")) {
+            JOptionPane.showMessageDialog(this,
+                    "Seul un administrateur peut supprimer un magasin.");
             return;
         }
 
-        String storeName = storeListModel.getElementAt(selectedIndex);
+        int row = storeTable.getSelectedRow();
 
-        int confirmation = JOptionPane.showConfirmDialog(
-                this,
-                "Voulez-vous vraiment supprimer le magasin : " + storeName + " ?",
-                "Confirmation",
-                JOptionPane.YES_NO_OPTION
-        );
-
-        if (confirmation == JOptionPane.YES_OPTION) {
-            storeListModel.remove(selectedIndex);
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this,
+                    "Sélectionnez un magasin.");
+            return;
         }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Supprimer ce magasin ?",
+                "Confirmation",
+                JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+
+            try {
+                int storeId = (int) tableModel.getValueAt(row, 0);
+                storeDAO.deleteStore(storeId);
+                loadStoresFromDatabase();
+
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this,
+                        "Erreur suppression : " + e.getMessage());
+            }
+        }
+    }
+
+    private void showEmployees() {
+
+        int row = storeTable.getSelectedRow();
+
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this,
+                    "Sélectionnez un magasin.");
+            return;
+        }
+
+        String storeName = tableModel.getValueAt(row, 1).toString();
+
+        JOptionPane.showMessageDialog(this,
+                "Employés du magasin " + storeName + " :\n\n"
+                        + "(fonction à connecter plus tard à store_access)",
+                "Liste des employés",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 }

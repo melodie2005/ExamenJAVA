@@ -1,56 +1,43 @@
 package ui;
 
+import dao.UserDAO;
+import models.User;
+
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.util.List;
 
-/**
- * Panneau de gestion des utilisateurs.
- *
- * Ce panneau est réservé à l'administrateur.
- * Il permet :
- *  - d'afficher la liste des utilisateurs
- *  - de modifier un utilisateur (pseudo / rôle)
- *  - de supprimer un utilisateur
- *
- * Les mots de passe ne sont JAMAIS affichés,
- * conformément aux règles de sécurité du sujet.
- */
-public class UserManagementPanel extends JPanel {
+public class UserManagementPanel extends JFrame {
 
     private JTable userTable;
     private DefaultTableModel tableModel;
+    private User connectedUser;
 
-    public UserManagementPanel() {
+    private UserDAO userDAO = new UserDAO();
 
-        /*
-         * BorderLayout permet de séparer clairement :
-         * - le titre
-         * - la table
-         * - les boutons d'action
-         */
+    public UserManagementPanel(User user) {
+
+        this.connectedUser = user;
+
+        setTitle("iStore - Gestion des Utilisateurs");
+        setSize(900, 550);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
 
-
-        // Titre
-
-        JLabel lblTitle = new JLabel("Gestion des utilisateurs", SwingConstants.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
+        // ===== Titre =====
+        JLabel lblTitle = new JLabel("Gestion des Utilisateurs", SwingConstants.CENTER);
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 22));
         lblTitle.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         add(lblTitle, BorderLayout.NORTH);
 
-
-        // Table des utilisateurs
-
-        /*
-         * La JTable est utilisée car elle est adaptée
-         * pour afficher des données structurées (utilisateurs).
-         */
+        // ===== Tableau =====
         tableModel = new DefaultTableModel(
-                new Object[]{"ID", "Email", "Pseudo", "Rôle"},
+                new Object[]{"ID", "Nom", "Email", "Rôle"},
                 0
         ) {
-            // On empêche la modification directe des cellules
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -58,120 +45,195 @@ public class UserManagementPanel extends JPanel {
         };
 
         userTable = new JTable(tableModel);
-        userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
         JScrollPane scrollPane = new JScrollPane(userTable);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 40, 10, 40));
         add(scrollPane, BorderLayout.CENTER);
 
-        // démonstration UI
-        loadDummyUsers();
+        loadUsersFromDatabase();
 
+        // ===== Boutons =====
+        JPanel bottomPanel = new JPanel(new FlowLayout());
 
-        // Boutons d'action
-
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-
+        JButton btnAdd = new JButton("Ajouter");
         JButton btnEdit = new JButton("Modifier");
         JButton btnDelete = new JButton("Supprimer");
 
-        actionPanel.add(btnEdit);
-        actionPanel.add(btnDelete);
+        bottomPanel.add(btnAdd);
+        bottomPanel.add(btnEdit);
+        bottomPanel.add(btnDelete);
 
-        add(actionPanel, BorderLayout.SOUTH);
+        add(bottomPanel, BorderLayout.SOUTH);
 
-
-        // Actions
-
-
+        // ===== Actions =====
+        btnAdd.addActionListener(e -> addUser());
         btnEdit.addActionListener(e -> editUser());
         btnDelete.addActionListener(e -> deleteUser());
+
+        setVisible(true);
     }
 
-    /**
-     * Chargement de données fictives.
-     *
-     * Ces données simulent les utilisateurs
-     * qui seront plus tard chargés depuis la base.
-     */
-    private void loadDummyUsers() {
-        tableModel.addRow(new Object[]{1, "admin@istore.com", "admin", "ADMIN"});
-        tableModel.addRow(new Object[]{2, "employee1@istore.com", "employee1", "EMPLOYEE"});
-        tableModel.addRow(new Object[]{3, "employee2@istore.com", "employee2", "EMPLOYEE"});
+    // ===============================
+    // Chargement depuis la base
+    // ===============================
+    private void loadUsersFromDatabase() {
+
+        try {
+            tableModel.setRowCount(0);
+
+            List<User> users = userDAO.getAllUsers();
+
+            for (User u : users) {
+                tableModel.addRow(new Object[]{
+                        u.getId(),
+                        u.getPseudo(),
+                        u.getEmail(),
+                        u.getRole()
+                });
+            }
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Erreur chargement utilisateurs : " + e.getMessage());
+        }
     }
 
-    /**
-     * Modification d'un utilisateur.
-     *
-     * On permet ici de modifier le pseudo et le rôle,
-     * ce qui correspond aux droits d'un administrateur.
-     */
-    private void editUser() {
-        int selectedRow = userTable.getSelectedRow();
+    private void addUser() {
 
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Veuillez sélectionner un utilisateur.",
-                    "Aucune sélection",
-                    JOptionPane.WARNING_MESSAGE
-            );
+        if (!connectedUser.getRole().equalsIgnoreCase("ADMIN")) {
+            JOptionPane.showMessageDialog(this,
+                    "Seul un administrateur peut ajouter un utilisateur.");
             return;
         }
 
-        String currentPseudo = tableModel.getValueAt(selectedRow, 2).toString();
-        String currentRole = tableModel.getValueAt(selectedRow, 3).toString();
+        JTextField txtName = new JTextField();
+        JTextField txtEmail = new JTextField();
+        JPasswordField txtPassword = new JPasswordField();
+        JComboBox<String> cbRole = new JComboBox<>(new String[]{"ADMIN", "EMPLOYEE"});
 
-        JTextField txtPseudo = new JTextField(currentPseudo);
+        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
+        panel.add(new JLabel("Nom :"));
+        panel.add(txtName);
+        panel.add(new JLabel("Email :"));
+        panel.add(txtEmail);
+        panel.add(new JLabel("Mot de passe :"));
+        panel.add(txtPassword);
+        panel.add(new JLabel("Rôle :"));
+        panel.add(cbRole);
+
+        int result = JOptionPane.showConfirmDialog(this, panel,
+                "Ajouter un utilisateur", JOptionPane.OK_CANCEL_OPTION);
+
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                userDAO.creatUser(
+                        txtEmail.getText().trim(),
+                        txtName.getText().trim(),
+                        new String(txtPassword.getPassword()),
+                        cbRole.getSelectedItem().toString()
+                );
+
+                loadUsersFromDatabase();
+
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this,
+                        "Erreur : " + e.getMessage());
+            }
+        }
+    }
+
+    private void editUser() {
+
+        int row = userTable.getSelectedRow();
+
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Sélectionnez un utilisateur.");
+            return;
+        }
+
+        int userId = (int) tableModel.getValueAt(row, 0);
+        String selectedEmail = tableModel.getValueAt(row, 2).toString();
+
+        if (!connectedUser.getRole().equalsIgnoreCase("ADMIN")
+                && !connectedUser.getEmail().equalsIgnoreCase(selectedEmail)) {
+
+            JOptionPane.showMessageDialog(this,
+                    "Vous ne pouvez modifier que votre propre compte.");
+            return;
+        }
+
+        String currentName = tableModel.getValueAt(row, 1).toString();
+        String currentRole = tableModel.getValueAt(row, 3).toString();
+
+        JTextField txtName = new JTextField(currentName);
         JComboBox<String> cbRole = new JComboBox<>(new String[]{"ADMIN", "EMPLOYEE"});
         cbRole.setSelectedItem(currentRole);
 
-        JPanel form = new JPanel(new GridLayout(2, 2, 10, 10));
-        form.add(new JLabel("Pseudo :"));
-        form.add(txtPseudo);
-        form.add(new JLabel("Rôle :"));
-        form.add(cbRole);
+        JPanel panel = new JPanel(new GridLayout(2, 2, 10, 10));
+        panel.add(new JLabel("Nom :"));
+        panel.add(txtName);
+        panel.add(new JLabel("Rôle :"));
+        panel.add(cbRole);
 
-        int result = JOptionPane.showConfirmDialog(
-                this,
-                form,
-                "Modifier l'utilisateur",
-                JOptionPane.OK_CANCEL_OPTION
-        );
+        int result = JOptionPane.showConfirmDialog(this, panel,
+                "Modifier utilisateur", JOptionPane.OK_CANCEL_OPTION);
 
         if (result == JOptionPane.OK_OPTION) {
-            tableModel.setValueAt(txtPseudo.getText().trim(), selectedRow, 2);
-            tableModel.setValueAt(cbRole.getSelectedItem(), selectedRow, 3);
+
+            try {
+
+                String newRole = currentRole;
+
+                if (connectedUser.getRole().equalsIgnoreCase("ADMIN")) {
+                    newRole = cbRole.getSelectedItem().toString();
+                }
+
+                userDAO.updateUser(userId,
+                        txtName.getText().trim(),
+                        newRole);
+
+                loadUsersFromDatabase();
+
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this,
+                        "Erreur modification : " + e.getMessage());
+            }
         }
     }
 
-    /**
-     * Suppression d'un utilisateur.
-     *
-     * Une confirmation est demandée avant suppression.
-     */
     private void deleteUser() {
-        int selectedRow = userTable.getSelectedRow();
 
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Veuillez sélectionner un utilisateur.",
-                    "Aucune sélection",
-                    JOptionPane.WARNING_MESSAGE
-            );
+        int row = userTable.getSelectedRow();
+
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Sélectionnez un utilisateur.");
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(
-                this,
+        int userId = (int) tableModel.getValueAt(row, 0);
+        String selectedEmail = tableModel.getValueAt(row, 2).toString();
+
+        if (!connectedUser.getRole().equalsIgnoreCase("ADMIN")
+                && !connectedUser.getEmail().equalsIgnoreCase(selectedEmail)) {
+
+            JOptionPane.showMessageDialog(this,
+                    "Vous ne pouvez supprimer que votre propre compte.");
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
                 "Voulez-vous vraiment supprimer cet utilisateur ?",
                 "Confirmation",
-                JOptionPane.YES_NO_OPTION
-        );
+                JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            tableModel.removeRow(selectedRow);
+
+            try {
+                userDAO.deleteUser(userId);
+                loadUsersFromDatabase();
+
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this,
+                        "Erreur suppression : " + e.getMessage());
+            }
         }
     }
 }
